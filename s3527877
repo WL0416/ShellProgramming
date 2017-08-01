@@ -2,6 +2,8 @@
 
 echo "Start audit"
 
+index=0
+
 while read p
 do
 username=$(echo $p | cut -d":" -f1)
@@ -9,8 +11,30 @@ pwhash=$(echo $p | cut -d":" -f2)
 while read g
 do
 guess=$g
-echo $guess
+guesshash=$(echo -n "$guess" | sha256sum | awk '{print $1}')
+echo $guesshash
+if [ "$guesshash" == "$pwhash" ]
+then
+results[$index]="$username"
+index=`expr $index + 1`
+results[$index]="$guess"
+index=`expr $index + 1`
+break
+fi
 done <$2
-echo $username
-echo $pwhash
 done <$1
+
+echo "these users' pws are invalid:"
+
+index=0
+for result in ${results[*]}
+do
+printf "$result"
+index=`expr $index + 1`
+check=`expr $index % 2`
+if [ $check -eq 0 ];then
+printf "\n"
+elif [ $check -eq 1 ];then
+printf " "
+fi
+done
