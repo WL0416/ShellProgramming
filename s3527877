@@ -6,6 +6,11 @@ while read p
 do
 username=$(echo $p | cut -d":" -f1)
 pwhash=$(echo $p | cut -d":" -f2)
+while read g
+do
+guess=$g
+echo $guess
+done <$2
 echo $username
 echo $pwhash
 done <$1
