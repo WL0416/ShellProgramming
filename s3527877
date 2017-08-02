@@ -2,39 +2,70 @@
 
 echo "Start audit"
 
+DICTIONARY='/usr/share/dict/american-english'
 index=0
 
+echo Guess Mode
+sleep 2
+# Guess
 while read p
 do
-username=$(echo $p | cut -d":" -f1)
-pwhash=$(echo $p | cut -d":" -f2)
-while read g
+	username=$(echo $p | cut -d":" -f1)
+	pwhash=$(echo $p | cut -d":" -f2)
+	while read g
+	do
+		guess=$g
+		guesshash=$(echo -n "$guess" | sha256sum | awk '{print $1}')
+		echo $guesshash
+		if [ "$guesshash" == "$pwhash" ]
+		then
+			results[$index]="$username"
+			index=`expr $index + 1`
+			results[$index]="$guess"
+			index=`expr $index + 1`
+			break
+		fi
+	done <"$2"
+done <"$1"
+
+printf "\n\n"
+echo Dictionary Attack
+sleep 2
+# Dictionary Attack
+while read p
 do
-guess=$g
-guesshash=$(echo -n "$guess" | sha256sum | awk '{print $1}')
-echo $guesshash
-if [ "$guesshash" == "$pwhash" ]
-then
-results[$index]="$username"
-index=`expr $index + 1`
-results[$index]="$guess"
-index=`expr $index + 1`
-break
-fi
-done <$2
-done <$1
+	username=$(echo $p | cut -d":" -f1)
+	pwhash=$(echo $p | cut -d":" -f2)
+	while read g
+	do
+		guess=$g
+		guesshash=$(echo -n "$guess" | sha256sum | awk '{print $1}')
+		echo $guesshash
+		if [ "$guesshash" == "$pwhash" ]
+		then
+			results[$index]="$username"
+			index=`expr $index + 1`
+			results[$index]="$guess"
+			index=`expr $index + 1`
+			break
+		fi
+	done <"$DICTIONARY"
+done <"$1"
 
-echo "these users' pws are invalid:"
+# Brute Force
 
+# Print out the result
+echo "Here is the users' passwords:"
 index=0
 for result in ${results[*]}
 do
-printf "$result"
-index=`expr $index + 1`
-check=`expr $index % 2`
-if [ $check -eq 0 ];then
-printf "\n"
-elif [ $check -eq 1 ];then
-printf " "
-fi
-done
+	printf "$result"
+	index=`expr $index + 1`
+	check=`expr $index % 2`
+	if [ $check -eq 0 ];then
+		printf "\n"
+	elif [ $check -eq 1 ];then
+		printf " "
+	fi
+done	
+
