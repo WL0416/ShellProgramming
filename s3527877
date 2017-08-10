@@ -1,71 +1,141 @@
 #!/bin/bash
 
-echo "Start audit"
-
+PASSWORDS='./pw'
+GUESSFILE='./guess'
 DICTIONARY='/usr/share/dict/american-english'
-index=0
+#DICTIONARY='/usr/share/dict/linux.words'
 
-echo Guess Mode
-sleep 2
+# Loading users' data first
+load()
+{
+	echo "Loading data"
+	sleep 1
+	index=0
+	while read p
+	do
+		employees[$index]="$p"
+		index=`expr $index + 1`
+	done <"$PASSWORDS"
+}
+
 # Guess
-while read p
-do
-	username=$(echo $p | cut -d":" -f1)
-	pwhash=$(echo $p | cut -d":" -f2)
-	while read g
+guess()
+{
+	echo 'Start audit'
+	echo Guess Mode
+	sleep 1
+	index=0
+	while read guess
 	do
-		guess=$g
 		guesshash=$(echo -n "$guess" | sha256sum | awk '{print $1}')
-		echo $guesshash
-		if [ "$guesshash" == "$pwhash" ]
-		then
-			results[$index]="$username"
-			index=`expr $index + 1`
-			results[$index]="$guess"
-			index=`expr $index + 1`
-			break
-		fi
-	done <"$2"
-done <"$1"
+		echo $guess
+		for user in ${employees[@]}
+		do
+			username=$(echo $user | cut -d":" -f1)
+			pwhash=$(echo $user | cut -d":" -f2)
+			if [ "$guesshash" == "$pwhash" ]
+			then
+				employees=("${employees[@]/$user}")
+				results[$index]="$username"
+				index=`expr $index + 1`
+				results[$index]="$guess"
+				index=`expr $index + 1`
+				found
+			fi
+		done
+	done <"$GUESSFILE" 
+}
 
-printf "\n\n"
-echo Dictionary Attack
-sleep 2
 # Dictionary Attack
-while read p
-do
-	username=$(echo $p | cut -d":" -f1)
-	pwhash=$(echo $p | cut -d":" -f2)
-	while read g
+dictionary()
+{
+	echo Dictionary Attack
+	sleep 1
+	while read guess
 	do
-		guess=$g
 		guesshash=$(echo -n "$guess" | sha256sum | awk '{print $1}')
-		echo $guesshash
-		if [ "$guesshash" == "$pwhash" ]
-		then
-			results[$index]="$username"
-			index=`expr $index + 1`
-			results[$index]="$guess"
-			index=`expr $index + 1`
-			break
-		fi
+		echo $guess
+		for user in ${employees[@]}
+		do
+			username=$(echo $user | cut -d":" -f1)
+			pwhash=$(echo $user | cut -d":" -f2)
+			if [ "$guesshash" == "$pwhash" ]
+			then
+				employees=("${employees[@]/$user}")
+				results[$index]="$username"
+				index=`expr $index + 1`
+				results[$index]="$guess"
+				index=`expr $index + 1`
+				found
+			fi
+		done
 	done <"$DICTIONARY"
-done <"$1"
+}
 
 # Brute Force
+brute()
+{
+	echo Brute Force
+	sleep 1
+	guessarray=($(echo {a..z} {a..z}{a..z} {a..z}{a..z}{a..z} {a..z}{a..z}{a..z}{a..z}))
+
+	(sleep 120 ; kill -9 $$) &
+
+	for guess in ${guessarray[@]}
+	do
+		if [ ${#employees[@]} -eq 0 ]
+		then
+			echo all users have been found
+			break
+		fi
+		
+		guesshash=$(echo -n "$guess" | sha256sum | awk '{print $1}')
+		echo "$guess"
+
+		for user in ${employees[@]}
+		do
+			username=$(echo $user | cut -d":" -f1)
+			pwhash=$(echo $user | cut -d":" -f2)
+
+			if [ "$guesshash" == "$pwhash" ]
+			then
+				employees=("${employees[@]/$user}")
+				results[$index]="$username"
+				index=`expr $index + 1`
+				results[$index]="$guess"
+				index=`expr $index + 1`
+				found
+			fi
+		
+		done
+	done
+}
 
 # Print out the result
-echo "Here is the users' passwords:"
-index=0
-for result in ${results[*]}
-do
-	printf "$result"
-	index=`expr $index + 1`
-	check=`expr $index % 2`
-	if [ $check -eq 0 ];then
-		printf "\n"
-	elif [ $check -eq 1 ];then
-		printf " "
-	fi
-done	
+found() 
+{
+	echo "Here is the users' passwords:"
+	rindex=0
+	for result in ${results[@]}
+	do
+		printf "$result"
+		rindex=`expr $rindex + 1`
+		check=`expr $rindex % 2`
+		if [ $check -eq 0 ];then
+			printf "\n"
+		elif [ $check -eq 1 ];then
+			printf " "
+		fi
+	done
+	sleep 1
+}
+
+load
+printf "\n"
+#guess
+printf "\n"
+#dictionary
+printf "\n"
+brute
+
 
