@@ -77,10 +77,9 @@ brute()
 	sleep 1
 	guessarray=($(echo {a..z} {a..z}{a..z} {a..z}{a..z}{a..z} {a..z}{a..z}{a..z}{a..z}))
 
+	start=`date +%s`
 	for guess in ${guessarray[@]}
 	do
-		start=`date +%s`
-
 		if [ ${#employees[@]} -eq 0 ]
 		then
 			echo all users have been found
@@ -107,9 +106,11 @@ brute()
 
 		end=`date +%s`
 		runtime=$((end-start))
+		echo "$runtime"
 
 		if [ $runtime -eq 120 ]
 		then
+			echo Time is up.
 			break
 		fi
 	done
@@ -136,10 +137,10 @@ found()
 
 load
 printf "\n"
-guess
-printf "\n"
-dictionary
-printf "\n"
+#guess
+#printf "\n"
+#dictionary
+#printf "\n"
 brute
 
 
