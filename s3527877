@@ -132,9 +132,9 @@ found()
 
 load
 printf "\n"
-#guess
+guess
 printf "\n"
-#dictionary
+dictionary
 printf "\n"
 brute
 
