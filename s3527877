@@ -3,7 +3,7 @@
 PASSWORDS='./pw'
 GUESSFILE='./guess'
 DICTIONARY='/usr/share/dict/american-english'
-#DICTIONARY='/usr/share/dict/linux.words'
+#DICTIONARY='~/e/linux.words'
 
 # Loading users' data first
 load()
@@ -28,7 +28,6 @@ guess()
 	while read guess
 	do
 		guesshash=$(echo -n "$guess" | sha256sum | awk '{print $1}')
-		echo $guess
 		for user in ${employees[@]}
 		do
 			username=$(echo $user | cut -d":" -f1)
@@ -54,7 +53,6 @@ dictionary()
 	while read guess
 	do
 		guesshash=$(echo -n "$guess" | sha256sum | awk '{print $1}')
-		echo $guess
 		for user in ${employees[@]}
 		do
 			username=$(echo $user | cut -d":" -f1)
@@ -79,10 +77,10 @@ brute()
 	sleep 1
 	guessarray=($(echo {a..z} {a..z}{a..z} {a..z}{a..z}{a..z} {a..z}{a..z}{a..z}{a..z}))
 
-	(sleep 120 ; kill -9 $$) &
-
 	for guess in ${guessarray[@]}
 	do
+		start=`date +%s`
+
 		if [ ${#employees[@]} -eq 0 ]
 		then
 			echo all users have been found
@@ -90,7 +88,6 @@ brute()
 		fi
 		
 		guesshash=$(echo -n "$guess" | sha256sum | awk '{print $1}')
-		echo "$guess"
 
 		for user in ${employees[@]}
 		do
@@ -106,15 +103,22 @@ brute()
 				index=`expr $index + 1`
 				found
 			fi
-		
 		done
+
+		end=`date +%s`
+		runtime=$((end-start))
+
+		if [ $runtime -eq 120 ]
+		then
+			break
+		fi
 	done
 }
 
 # Print out the result
 found() 
 {
-	echo "Here is the users' passwords:"
+	echo "Here is the found users' passwords:"
 	rindex=0
 	for result in ${results[@]}
 	do
